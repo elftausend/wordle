@@ -1,5 +1,5 @@
-mod wordle;
 mod cursor;
+mod wordle;
 use wordle::Wordle;
 
 use macroquad::prelude::*;
@@ -10,10 +10,9 @@ const CELL_WIDTH: f32 = 40.;
 const CELL_HEIGHT: f32 = 40.;
 const CELL_SPACING: f32 = 1.1;
 
-
 #[macroquad::main("Wordle")]
-async fn main() {
-    let mut wordle = Wordle::new();
+async fn main() -> Result<(), std::io::Error> {
+    let mut wordle = Wordle::new()?;
 
     loop {
         clear_background(WHITE);
