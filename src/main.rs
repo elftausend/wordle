@@ -20,6 +20,7 @@ async fn main() -> Result<(), std::io::Error> {
         wordle.draw();
         if is_key_pressed(KeyCode::Enter) {
             if wordle.word_in_list() {
+                wordle.mark_chars();
                 wordle.cursor.move_down();
                 wordle.cursor.col_reset();
                 wordle.cursor.selected = true;
@@ -37,6 +38,7 @@ async fn main() -> Result<(), std::io::Error> {
             wordle.cursor.selected = true;
         } else {
             if let Some(pressed_char) = get_char_pressed() {
+       
                 if (('a'..'z').contains(&pressed_char) || ('A'..'Z').contains(&pressed_char))
                     && wordle.cursor.selected
                 {

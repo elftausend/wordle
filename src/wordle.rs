@@ -29,6 +29,7 @@ pub fn read_word_file() -> Result<Vec<String>, std::io::Error> {
 
 #[derive(Debug, Default)]
 pub struct Wordle {
+    pub selected_word: String,
     pub words: Vec<String>,
     pub cursor: Cursor,
     pub fields: [[Field; COLS]; ROWS],
@@ -37,6 +38,7 @@ pub struct Wordle {
 impl Wordle {
     pub fn new() -> Result<Wordle, std::io::Error> {
         Ok(Wordle {
+            selected_word: "nebel".to_string().to_ascii_uppercase(),
             words: read_word_file()?,
             cursor: Cursor {
                 selected: true,
@@ -104,6 +106,21 @@ impl Wordle {
             return false;
         }
         self.words.contains(&fields_to_string(word).to_ascii_uppercase())
+    }
+
+    pub fn mark_chars(&mut self) {
+        let word_list = &mut self.fields[self.cursor.cursor_pos.0];
+        let word = fields_to_string(word_list).to_ascii_uppercase();
+        
+        for (idx, (lhs, rhs)) in word.chars().zip(self.selected_word.chars()).enumerate() {
+            if lhs == rhs {
+                word_list[idx].background_color = GREEN;
+            } else if self.selected_word.contains(lhs) {
+                word_list[idx].background_color = YELLOW;
+            } else {
+                word_list[idx].background_color = LIGHTGRAY;
+            }
+        }
     }
 }
 
