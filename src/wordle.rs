@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use macroquad::prelude::*;
 
-use crate::{cursor::Cursor, CELL_HEIGHT, CELL_SPACING, CELL_WIDTH, COLS, ROWS};
+use crate::{cursor::Cursor, word::Word, CELL_HEIGHT, CELL_SPACING, CELL_WIDTH, COLS, ROWS};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Field {
@@ -19,7 +21,8 @@ impl Default for Field {
 
 pub fn read_word_file() -> Result<Vec<String>, std::io::Error> {
     std::fs::read_to_string("5char-wordlist-de.txt").map(|read| {
-        let mut lines = read.lines()
+        let mut lines = read
+            .lines()
             .map(|line| line.to_string().to_ascii_uppercase())
             .collect::<Vec<String>>();
         lines.sort();
@@ -29,7 +32,7 @@ pub fn read_word_file() -> Result<Vec<String>, std::io::Error> {
 
 #[derive(Debug, Default)]
 pub struct Wordle {
-    pub selected_word: String,
+    pub selected_word: Word,
     pub words: Vec<String>,
     pub cursor: Cursor,
     pub fields: [[Field; COLS]; ROWS],
@@ -38,7 +41,7 @@ pub struct Wordle {
 impl Wordle {
     pub fn new() -> Result<Wordle, std::io::Error> {
         Ok(Wordle {
-            selected_word: "nebel".to_string().to_ascii_uppercase(),
+            selected_word: Word::new("kanne"),
             words: read_word_file()?,
             cursor: Cursor {
                 selected: true,
@@ -105,22 +108,50 @@ impl Wordle {
         if !is_length_cols(word) {
             return false;
         }
-        self.words.contains(&fields_to_string(word).to_ascii_uppercase())
+        self.words
+            .contains(&fields_to_string(word).to_ascii_uppercase())
     }
 
     pub fn mark_chars(&mut self) {
         let word_list = &mut self.fields[self.cursor.cursor_pos.0];
         let word = fields_to_string(word_list).to_ascii_uppercase();
         
-        for (idx, (lhs, rhs)) in word.chars().zip(self.selected_word.chars()).enumerate() {
+        let mut zeroed_char_map = word
+            .chars()
+            .into_iter()
+            .map(|char| (char, 0))
+            .collect::<HashMap<char, usize>>();
+
+        for (idx, (lhs, rhs)) in word
+            .chars()
+            .zip(self.selected_word.word.chars())
+            .enumerate()
+        {
+            let background_color = &mut word_list[idx].background_color;
+            *background_color = LIGHTGRAY;
+
             if lhs == rhs {
-                word_list[idx].background_color = GREEN;
-            } else if self.selected_word.contains(lhs) {
-                word_list[idx].background_color = YELLOW;
-            } else {
-                word_list[idx].background_color = LIGHTGRAY;
+                *background_color = GREEN;
+                continue;
             }
+            if !self.selected_word.word.contains(lhs) {
+                continue;
+            }
+
+            let max_mark_count_for_char = self.selected_word.chars[&lhs];
+            let char_count = zeroed_char_map.get_mut(&lhs).unwrap();
+                
+            if *char_count < max_mark_count_for_char {
+                *char_count += 1;
+                *background_color = YELLOW;
+            }                
+
         }
+    }
+
+    pub fn check_win(&self) -> bool {
+        self.selected_word.word
+            == fields_to_string(&self.fields[self.cursor.cursor_pos.0]).to_ascii_uppercase()
     }
 }
 

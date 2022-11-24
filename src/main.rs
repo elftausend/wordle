@@ -1,5 +1,8 @@
 mod cursor;
+mod key_actions;
+mod word;
 mod wordle;
+use key_actions::enter;
 use wordle::Wordle;
 
 use macroquad::prelude::*;
@@ -19,12 +22,7 @@ async fn main() -> Result<(), std::io::Error> {
 
         wordle.draw();
         if is_key_pressed(KeyCode::Enter) {
-            if wordle.word_in_list() {
-                wordle.mark_chars();
-                wordle.cursor.move_down();
-                wordle.cursor.col_reset();
-                wordle.cursor.selected = true;
-            }
+            enter(&mut wordle);
         } else if is_key_pressed(KeyCode::Left) {
             wordle.cursor.move_left();
         } else if is_key_pressed(KeyCode::Right) {
@@ -38,8 +36,7 @@ async fn main() -> Result<(), std::io::Error> {
             wordle.cursor.selected = true;
         } else {
             if let Some(pressed_char) = get_char_pressed() {
-       
-                if (('a'..'z').contains(&pressed_char) || ('A'..'Z').contains(&pressed_char))
+                if (('a'..='z').contains(&pressed_char) || ('A'..='Z').contains(&pressed_char))
                     && wordle.cursor.selected
                 {
                     wordle.update_field(pressed_char.to_ascii_uppercase());
