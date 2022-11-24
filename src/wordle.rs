@@ -41,7 +41,7 @@ pub struct Wordle {
 impl Wordle {
     pub fn new() -> Result<Wordle, std::io::Error> {
         Ok(Wordle {
-            selected_word: Word::new("kanne"),
+            selected_word: Word::new("worte"),
             words: read_word_file()?,
             cursor: Cursor {
                 selected: true,
@@ -115,13 +115,14 @@ impl Wordle {
     pub fn mark_chars(&mut self) {
         let word_list = &mut self.fields[self.cursor.cursor_pos.0];
         let word = fields_to_string(word_list).to_ascii_uppercase();
-        
+
         let mut zeroed_char_map = word
             .chars()
             .into_iter()
             .map(|char| (char, 0))
             .collect::<HashMap<char, usize>>();
 
+        // green marker
         for (idx, (lhs, rhs)) in word
             .chars()
             .zip(self.selected_word.word.chars())
@@ -130,22 +131,26 @@ impl Wordle {
             let background_color = &mut word_list[idx].background_color;
             *background_color = LIGHTGRAY;
 
+            let char_count = zeroed_char_map.get_mut(&lhs).unwrap();
             if lhs == rhs {
                 *background_color = GREEN;
-                continue;
+                *char_count += 1;
             }
+        }
+        // yellow marker
+        for (idx, lhs) in word.chars().enumerate() {
+            let char_count = zeroed_char_map.get_mut(&lhs).unwrap();
+
             if !self.selected_word.word.contains(lhs) {
                 continue;
             }
 
             let max_mark_count_for_char = self.selected_word.chars[&lhs];
-            let char_count = zeroed_char_map.get_mut(&lhs).unwrap();
-                
+
             if *char_count < max_mark_count_for_char {
                 *char_count += 1;
-                *background_color = YELLOW;
-            }                
-
+                word_list[idx].background_color = YELLOW;
+            }
         }
     }
 
