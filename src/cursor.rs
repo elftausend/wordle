@@ -34,14 +34,6 @@ impl Cursor {
         true
     }
 
-    pub fn move_up(&mut self) -> bool {
-        if self.cursor_pos.0 <= 0 {
-            return false;
-        }
-        self.cursor_pos.0 -= 1;
-        true
-    }
-
     pub fn is_cursor_on_pos(&self, pos: (usize, usize)) -> bool {
         pos.0 == self.cursor_pos.0 && pos.1 == self.cursor_pos.1
     }
