@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Word {
     pub word: String,
     pub chars: HashMap<char, usize>,

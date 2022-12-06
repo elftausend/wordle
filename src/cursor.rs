@@ -17,10 +17,10 @@ impl Cursor {
     }
 
     pub fn move_left(&mut self) -> bool {
-        if self.cursor_pos.1 <= 0 {
+        if self.cursor_pos.1 == 0 {
             return false;
         }
-        self.cursor_pos.1 -= 1 * self.selected as usize;
+        self.cursor_pos.1 -= self.selected as usize;
         self.selected = true;
 
         true

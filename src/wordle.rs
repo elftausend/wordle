@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use macroquad::prelude::*;
 
-use crate::{cursor::Cursor, word::Word, CELL_HEIGHT, CELL_SPACING, CELL_WIDTH, COLS, ROWS, key_actions::enter};
+use crate::{
+    cursor::Cursor, key_actions::enter, word::Word, CELL_HEIGHT, CELL_SPACING, CELL_WIDTH, COLS,
+    ROWS,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Field {
@@ -81,7 +84,10 @@ impl Wordle {
 
     pub fn draw_lost(&mut self) {
         draw_text(
-            "Du konntest das gesuchte Wort nicht finden!",
+            &format!(
+                r#"Du konntest das gesuchte Wort ("{}") nicht finden!"#,
+                self.selected_word.word
+            ),
             10.,
             30. + ROWS as f32 * CELL_HEIGHT * CELL_SPACING,
             20.,
@@ -144,8 +150,13 @@ impl Wordle {
             .contains(&fields_to_string(word).to_ascii_uppercase())
     }
 
+    pub fn field_in_current_row(&mut self) -> &mut [Field] {
+        &mut self.fields[self.cursor.cursor_pos.0]
+    }
+
     pub fn mark_chars(&mut self) {
-        let word_list = &mut self.fields[self.cursor.cursor_pos.0];
+        let selected_word = self.selected_word.clone();
+        let word_list = self.field_in_current_row();
         let word = fields_to_string(word_list).to_ascii_uppercase();
 
         let mut zeroed_char_map = word
@@ -154,36 +165,8 @@ impl Wordle {
             .map(|char| (char, 0))
             .collect::<HashMap<char, usize>>();
 
-        // green marker
-        for (idx, (lhs, rhs)) in word
-            .chars()
-            .zip(self.selected_word.word.chars())
-            .enumerate()
-        {
-            let background_color = &mut word_list[idx].background_color;
-            *background_color = LIGHTGRAY;
-
-            let char_count = zeroed_char_map.get_mut(&lhs).unwrap();
-            if lhs == rhs {
-                *background_color = GREEN;
-                *char_count += 1;
-            }
-        }
-        // yellow marker
-        for (idx, lhs) in word.chars().enumerate() {
-            let char_count = zeroed_char_map.get_mut(&lhs).unwrap();
-
-            if !self.selected_word.word.contains(lhs) {
-                continue;
-            }
-
-            let max_mark_count_for_char = self.selected_word.chars[&lhs];
-
-            if *char_count < max_mark_count_for_char {
-                *char_count += 1;
-                word_list[idx].background_color = YELLOW;
-            }
-        }
+        mark_correct_pos_chars(&selected_word, &word, word_list, &mut zeroed_char_map);
+        mark_contained_chars(&selected_word, &word, word_list, &mut zeroed_char_map);
     }
 
     pub fn check_win(&self) -> State {
@@ -191,7 +174,7 @@ impl Wordle {
             == fields_to_string(&self.fields[self.cursor.cursor_pos.0]).to_ascii_uppercase()
         {
             State::Won
-        } else if self.cursor.cursor_pos.0 == ROWS-1 {
+        } else if self.cursor.cursor_pos.0 == ROWS - 1 {
             State::Lost
         } else {
             State::Playing
@@ -212,18 +195,15 @@ impl Wordle {
 
             self.update_field(' ');
             self.cursor.selected = true;
-        } else {
-            if let Some(pressed_char) = get_char_pressed() {
-                if (('a'..='z').contains(&pressed_char) || ('A'..='Z').contains(&pressed_char))
-                    && self.cursor.selected
-                {
-                    self.update_field(pressed_char.to_ascii_uppercase());
-                    self.cursor.move_right();
-                    //wordle.cursor.unselected_del = false;
-                }
+        } else if let Some(pressed_char) = get_char_pressed() {
+            if (('a'..='z').contains(&pressed_char) || ('A'..='Z').contains(&pressed_char))
+                && self.cursor.selected
+            {
+                self.update_field(pressed_char.to_ascii_uppercase());
+                self.cursor.move_right();
+                //wordle.cursor.unselected_del = false;
             }
         }
-
     }
 }
 
@@ -242,4 +222,42 @@ pub fn is_length_cols(word: &[Field]) -> bool {
         }
     }
     true
+}
+
+pub fn mark_correct_pos_chars(selected_word: &Word, word: &str, word_list: &mut [Field], char_map: &mut HashMap<char, usize>) {
+    for (idx, (lhs, rhs)) in word
+        .chars()
+        .zip(selected_word.word.chars())
+        .enumerate()
+    {
+        let background_color = &mut word_list[idx].background_color;
+        *background_color = LIGHTGRAY;
+
+        let char_count = char_map.get_mut(&lhs).unwrap();
+
+        if lhs == rhs {
+            *background_color = GREEN;
+            *char_count += 1;
+        }
+    }
+}
+
+pub fn mark_contained_chars(selected_word: &Word, word: &str, word_list: &mut [Field], char_map: &mut HashMap<char, usize>) {
+    for (idx, lhs) in word
+        .chars()
+        .enumerate()
+    {
+        let background_color = &mut word_list[idx].background_color;
+
+        let Some(max_mark_count_for_char) = selected_word.chars.get(&lhs) else {
+            continue;
+        };
+
+        let char_count = char_map.get_mut(&lhs).unwrap();
+
+        if *char_count < *max_mark_count_for_char && *background_color == LIGHTGRAY {
+            *char_count += 1;
+            word_list[idx].background_color = YELLOW;
+        }
+    }
 }

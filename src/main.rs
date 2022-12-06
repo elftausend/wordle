@@ -2,7 +2,7 @@ mod cursor;
 mod key_actions;
 mod word;
 mod wordle;
-use wordle::{Wordle, State};
+use wordle::{State, Wordle};
 
 use macroquad::prelude::*;
 
@@ -20,13 +20,13 @@ async fn main() -> Result<(), std::io::Error> {
         clear_background(WHITE);
 
         wordle.draw_grid();
-        
+
         match wordle.game_state {
             State::Won => wordle.draw_won(),
             State::Lost => wordle.draw_lost(),
             State::Playing => wordle.game_logic(),
-    }
-        
+        }
+
         next_frame().await;
     }
 }
